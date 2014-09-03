@@ -11,29 +11,22 @@ typedef uint32_t uint_m;
 
 typedef struct
 {
-	union
-	{
-		real entry[4][4];
-		struct
-		{
-			real e11;
-			real e12;
-			real e13;
-			real e14;
-			real e21;
-			real e22;
-			real e23;
-			real e24;
-			real e31;
-			real e32;
-			real e33;
-			real e34;
-			real e41;
-			real e42;
-			real e43;
-			real e44;
-		};
-	};
+	real e11;
+	real e12;
+	real e13;
+	real e14;
+	real e21;
+	real e22;
+	real e23;
+	real e24;
+	real e31;
+	real e32;
+	real e33;
+	real e34;
+	real e41;
+	real e42;
+	real e43;
+	real e44;
 } mat4x4;
 
 typedef struct
@@ -63,6 +56,12 @@ typedef struct
 	int x, y, z, w;
 } vector4_i;
 
+mat4x4 mat4x4_multiply(mat4x4 *a, mat4x4 *b);
+
 mat4x4 mat4x4_identity();
+mat4x4 mat4x4_translation(vector3_f a);
+mat4x4 mat4x4_scaling(vector3_f a);
+
+void mat4x4_print(mat4x4 *a);
 
 #endif

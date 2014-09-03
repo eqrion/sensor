@@ -1,5 +1,7 @@
 #include "renderer.h"
 #include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
 
 int img_alloc(uint32_t width, uint32_t height, image_buffer *buf)
 {
@@ -169,8 +171,8 @@ void rs_draw_trianglelist(vector3_f *verts, uint32_t verts_count, image_buffer *
 		real left_inv_slope = (screen_verts[2].x - screen_verts[0].x) / (screen_verts[2].y - screen_verts[0].y);
 
 		int32_t top_scanline = (int32_t)screen_verts[0].y;
-		int32_t middle_scanline = (int32_t)fmax(screen_verts[1].y, screen_verts[2].y);
-		int32_t bottom_scanline = (int32_t)fmin(screen_verts[1].y, screen_verts[2].y);
+		int32_t middle_scanline = (int32_t)fmaxf(screen_verts[1].y, screen_verts[2].y);
+		int32_t bottom_scanline = (int32_t)fminf(screen_verts[1].y, screen_verts[2].y);
 		int32_t cur_scanline = top_scanline;
 
 		while (cur_scanline >= middle_scanline)
@@ -179,12 +181,13 @@ void rs_draw_trianglelist(vector3_f *verts, uint32_t verts_count, image_buffer *
 			int32_t right_mark = (int32_t)(screen_verts[0].x + right_inv_slope * (cur_scanline - top_scanline));
 			int32_t cur_mark = left_mark;
 
-			uint8_t* blit = &buf->pixels[cur_scanline * buf->width + cur_mark];
+			image_pixel *blit = &buf->pixels[cur_scanline * buf->width + cur_mark];
 			while (cur_mark <= right_mark)
 			{
-				*(blit++) = 255;
-				*(blit++) = 255;
-				*(blit++) = 255;
+				blit->r = 255;
+				blit->g = 255;
+				blit->b = 255;
+				++blit;
 				++cur_mark;
 			}
 
@@ -201,12 +204,13 @@ void rs_draw_trianglelist(vector3_f *verts, uint32_t verts_count, image_buffer *
 				int32_t right_mark = (int32_t)(screen_verts[1].x + right_inv_slope * (cur_scanline - middle_scanline));
 				int32_t cur_mark = left_mark;
 
-				uint8_t* blit = &buf->pixels[cur_scanline * buf->width + cur_mark];
+				image_pixel *blit = &buf->pixels[cur_scanline * buf->width + cur_mark];
 				while (cur_mark <= right_mark)
 				{
-					*(blit++) = 255;
-					*(blit++) = 255;
-					*(blit++) = 255;
+					blit->r = 255;
+					blit->g = 255;
+					blit->b = 255;
+					++blit;
 					++cur_mark;
 				}
 
@@ -223,12 +227,13 @@ void rs_draw_trianglelist(vector3_f *verts, uint32_t verts_count, image_buffer *
 				int32_t right_mark = (int32_t)(screen_verts[0].x + right_inv_slope * (cur_scanline - top_scanline));
 				int32_t cur_mark = left_mark;
 
-				uint8_t* blit = &buf->pixels[cur_scanline * buf->width + cur_mark];
+				image_pixel *blit = &buf->pixels[cur_scanline * buf->width + cur_mark];
 				while (cur_mark <= right_mark)
 				{
-					*(blit++) = 255;
-					*(blit++) = 255;
-					*(blit++) = 255;
+					blit->r = 255;
+					blit->g = 255;
+					blit->b = 255;
+					++blit;
 					++cur_mark;
 				}
 

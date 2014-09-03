@@ -33,5 +33,17 @@ int main(int argc, char** argcv)
 
 	img_dealloc(&buf);
 
+	vector3_f a = {5, 5, 5};
+	mat4x4 t1 = mat4x4_translation(a);
+	vector3_f b = {15, 25, 35};
+	mat4x4 t2 = mat4x4_translation(b);
+	vector3_f c = {2, 2, 2};
+	mat4x4 t3 = mat4x4_scaling(c);
+
+	mat4x4 t4 = mat4x4_multiply(&t3, &t2);
+	mat4x4 t5 = mat4x4_multiply(&t4, &t1);
+
+	mat4x4_print(&t5);
+
 	return 0;
 }
