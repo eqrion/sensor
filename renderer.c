@@ -114,18 +114,20 @@ void rs_draw_trianglelist(vector3_f *verts, uint32_t verts_count, image_buffer *
 	}
 
 	vector2_f screen_verts[3];
+	vector2_i buf_size = { buf->width - 1, buf->height - 1 };
+
 	for (uint32_t i = 0; i < verts_count;)
 	{
-		screen_verts[0].x = (verts[i].x * buf->width + buf->width) * 0.5F;
-		screen_verts[0].y = (verts[i].y * buf->height + buf->height) * 0.5F;
+		screen_verts[0].x = (verts[i].x * buf_size.x + buf_size.x) * 0.5F;
+		screen_verts[0].y = (verts[i].y * buf_size.y + buf_size.y) * 0.5F;
 		++i;
 
-		screen_verts[1].x = (verts[i].x * buf->width + buf->width) * 0.5F;
-		screen_verts[1].y = (verts[i].y * buf->height + buf->height) * 0.5F;
+		screen_verts[1].x = (verts[i].x * buf_size.x + buf_size.x) * 0.5F;
+		screen_verts[1].y = (verts[i].y * buf_size.y + buf_size.y) * 0.5F;
 		++i;
 
-		screen_verts[2].x = (verts[i].x * buf->width + buf->width) * 0.5F;
-		screen_verts[2].y = (verts[i].y * buf->height + buf->height) * 0.5F;
+		screen_verts[2].x = (verts[i].x * buf_size.x + buf_size.x) * 0.5F;
+		screen_verts[2].y = (verts[i].y * buf_size.y + buf_size.y) * 0.5F;
 		++i;
 
 		/* screen_verts[0] is the highest vert */

@@ -24,7 +24,7 @@ int main(int argc, char** argcv)
 	tris[1].z = 0;
 
 	tris[2].x = -1;
-	tris[2].y = -1;
+	tris[2].y = 1;
 	tris[2].z = 0;
 
 	rs_draw_trianglelist(tris, 3, &buf);
