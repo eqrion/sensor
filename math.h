@@ -3,9 +3,17 @@
 
 #include <stdint.h>
 
+#define M_2_PI 6.28318530717958647692528676655900576839433879875021164194989
+#define M_3_OVER_2_PI 4.71238898038468985769396507491925432629575409906265873146242
+#define M_PI 3.14159265358979323846264338327950288419716939937510582097494
+#define M_PI_OVER_2 1.57079632679489661923132169163975144209858469968755291048747
+#define M_PI_OVER_4 0.785398163397448309615660845819875721049292349843776455243736
+#define M_PI_OVER_6 0.523598775598298873077107230546583814032861566562517636829157
+#define M_PI_OVER_8 0.392699081698724154807830422909937860524646174921888227621868
+
 typedef float real;
-typedef int32_t int_m;
-typedef uint32_t uint_m;
+typedef int_fast32_t int_m;
+typedef uint_fast32_t uint_m;
 
 #define CLAMP_F(a, min, max) fmin(fmax(a, min), max)
 
@@ -57,10 +65,16 @@ typedef struct
 } vector4_i;
 
 mat4x4 mat4x4_multiply(mat4x4 *a, mat4x4 *b);
+vector3_f mat4x4_transform(mat4x4 *a, vector3_f* vector);
+void mat4x4_transform_stream(mat4x4 *a, vector3_f* vector, uint_m vector_count);
 
 mat4x4 mat4x4_identity();
 mat4x4 mat4x4_translation(vector3_f a);
 mat4x4 mat4x4_scaling(vector3_f a);
+
+mat4x4 mat4x4_rot_x(real theta);
+mat4x4 mat4x4_rot_y(real theta);
+mat4x4 mat4x4_rot_z(real theta);
 
 void mat4x4_print(mat4x4 *a);
 

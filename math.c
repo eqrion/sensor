@@ -1,5 +1,6 @@
 #include "math.h"
 #include <stdio.h>
+#include <math.h>
 
 mat4x4 mat4x4_multiply(mat4x4 *a, mat4x4 *b)
 {
@@ -87,6 +88,32 @@ mat4x4 mat4x4_multiply(mat4x4 *a, mat4x4 *b)
 
 	return result;
 }
+vector3_f mat4x4_transform(mat4x4 *a, vector3_f* vector)
+{
+	/*{
+	{e14 + e11 x + e12 y + e13 z},
+	{e24 + e21 x + e22 y + e23 z},
+	{e34 + e31 x + e32 y + e33 z},
+	{e44 + e41 x + e42 y + e43 z}
+	}*/
+
+	vector3_f result = 
+	{
+		a->e11 * vector->x + a->e12 * vector->y + a->e13 * vector->z + a->e14,
+		a->e21 * vector->x + a->e22 * vector->y + a->e23 * vector->z + a->e24,
+		a->e31 * vector->x + a->e32 * vector->y + a->e33 * vector->z + a->e34,
+	};
+	return result;
+}
+void mat4x4_transform_stream(mat4x4 *a, vector3_f* vector, uint_m vector_count)
+{
+	while (vector_count > 0)
+	{
+		(*vector) = mat4x4_transform(a, vector);
+		++vector;
+		--vector_count;
+	}
+}
 
 mat4x4 mat4x4_identity()
 {
@@ -122,6 +149,49 @@ mat4x4 mat4x4_scaling(vector3_f a)
 		0, 0, 0, 1
 	};
 	return result;
+}
+
+mat4x4 mat4x4_rot_x(real theta)
+{
+	real cos_theta = cos(theta);
+	real sin_theta = sin(theta);
+
+	mat4x4 result =
+	{
+		1, 0, 0, 0,
+		0, cos_theta, -sin_theta, 0,
+		0, sin_theta, cos_theta, 0,
+		0, 0, 0, 1
+	};
+	return result;	
+}
+mat4x4 mat4x4_rot_y(real theta)
+{
+	real cos_theta = cos(theta);
+	real sin_theta = sin(theta);
+
+	mat4x4 result =
+	{
+		cos_theta, 0, sin_theta, 0,
+		0, 1, 0, 0,
+		-sin_theta, 0, cos_theta, 0,
+		0, 0, 0, 1
+	};
+	return result;	
+}
+mat4x4 mat4x4_rot_z(real theta)
+{
+	real cos_theta = cos(theta);
+	real sin_theta = sin(theta);
+
+	mat4x4 result =
+	{
+		cos_theta, -sin_theta, 0, 0,
+		sin_theta, cos_theta, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1
+	};
+	return result;	
 }
 
 void mat4x4_print(mat4x4* a)

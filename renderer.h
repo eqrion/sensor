@@ -2,12 +2,15 @@
 #define sensor_renderer_h
 
 #include "math.h"
-
 #include <stdint.h>
 
 /*
-*	Image Buffer
-*/
+ *	Image Buffer:
+ *	
+ * 	Image memory is laid out with 'height' scanlines of length 'width', with the
+ *	pixel (0, 0) in the bottom left corner, and the pixel (width - 1, height - 1)
+ *	in the upper right corner.
+ */
 
 typedef struct
 {
@@ -15,17 +18,21 @@ typedef struct
 } image_pixel;
 typedef struct
 {
-	uint32_t width;
-	uint32_t height;
+	uint_m width;
+	uint_m height;
 	image_pixel *pixels;
 } image_buffer;
 
-int img_alloc(uint32_t width, uint32_t height, image_buffer *buf);
+int_m img_alloc(uint_m width, uint_m height, image_buffer *buf);
 void img_dealloc(image_buffer *buf);
 
 /*
-*	Depth Stencil Buffer
-*/
+ *	Depth Stencil Buffer
+ *
+ * 	DS Buffer memory is laid out with 'height' scanlines of length 'width', with the
+ *	pixel (0, 0) in the bottom left corner, and the pixel (width - 1, height - 1)
+ *	in the upper right corner.
+ */
 
 typedef struct
 {
@@ -33,12 +40,12 @@ typedef struct
 } ds_pixel;
 typedef struct
 {
-	uint32_t width;
-	uint32_t height;
+	uint_m width;
+	uint_m height;
 	ds_pixel *pixels;
 } ds_buffer;
 
-int ds_alloc(uint32_t width, uint32_t height, ds_buffer *buf);
+int_m ds_alloc(uint_m width, uint_m height, ds_buffer *buf);
 void ds_dealloc(ds_buffer *buf);
 
 /*
@@ -53,21 +60,22 @@ enum vertex_element_type
 };
 typedef struct
 {
-	uint32_t type;
-	uint32_t offset;
+	uint_m type;
+	uint_m offset;
 } vertex_element;
 typedef struct
 {
-	void *verts;
-	uint32_t verts_count;
-	vertex_element *vert_desc;
-	uint32_t vert_desc_count;
+	void 			*verts;
+	uint_m 			verts_count;
+	vertex_element 	*vert_desc;
+	uint_m 			vert_desc_count;
 } vertex_buffer;
 
-uint32_t vs_element_size(uint32_t type);
-uint32_t vs_vertex_size(vertex_element *elems, uint32_t elems_count);
+uint_m vs_element_size(uint_m type);
+uint_m vs_vertex_size(vertex_element *elems, uint_m elems_count);
 
-int vs_alloc(vertex_element *elems, uint32_t elems_count, uint32_t verts_count, vertex_buffer *buf);
+int_m vs_alloc(vertex_element *elems, uint_m elems_count, uint_m verts_count, vertex_buffer *buf);
+int_m vs_buffer_data(vertex_buffer *buf, void *data, uint_m data_size);
 void vs_dealloc(vertex_buffer *buf);
 
 /*
@@ -81,7 +89,7 @@ typedef struct
 {
 	vertex_shader_function function;
 	vertex_element *out_desc;
-	uint32_t 		out_desc_count;
+	uint_m 			out_desc_count;
 } vertex_shader;
 
 typedef struct
@@ -90,6 +98,6 @@ typedef struct
 } fragment_shader;
 
 void rs_clear(image_pixel color, image_buffer *buffer);
-void rs_draw_trianglelist(vector3_f *verts, uint32_t verts_count, image_buffer *buf);
+void rs_draw_trianglelist(vertex_buffer *vert_buffer, uint_m offset, uint_m count, fragment_shader shader, image_buffer *buf);
 
 #endif

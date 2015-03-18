@@ -72,10 +72,9 @@ void bmp_write_framebuffer(const char* file_name, image_buffer *image)
 
 	fwrite(&bmp, sizeof(bmp), 1, out_file);
 
-
 	for (uint32_t i = 0; i < image->height; ++i)
 	{
-		memcpy(scanline, image->pixels + image->width * i, scanline_length);
+		memcpy(scanline, &image->pixels[image->width * i], scanline_length);
 		for (uint32_t j = 0; j < scanline_length;)
 		{
 			uint8_t temp = scanline[j];

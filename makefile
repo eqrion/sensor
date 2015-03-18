@@ -1,5 +1,3 @@
-# Generic GNUMakefile
- 
 # Just a snippet to stop executing under other make(1) commands
 # that won't understand these lines
 ifneq (,)
