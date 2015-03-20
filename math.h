@@ -64,6 +64,14 @@ typedef struct
 	int x, y, z, w;
 } vector4_i;
 
+vector3_f vec3_scale(vector3_f a, real b);
+vector3_f vec3_add(vector3_f a, vector3_f b);
+
+vector4_f vec4_scale(vector4_f a, real b);
+vector4_f vec4_add(vector4_f a, vector4_f b);
+
+vector3_f convert_to_barycentric(vector3_f euclidean_point, vector3_f tri1, vector3_f tri2, vector3_f tri3);
+
 mat4x4 mat4x4_multiply(mat4x4 *a, mat4x4 *b);
 vector3_f mat4x4_transform(mat4x4 *a, vector3_f* vector);
 void mat4x4_transform_stream(mat4x4 *a, vector3_f* vector, uint_m vector_count);

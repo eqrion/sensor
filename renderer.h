@@ -75,7 +75,7 @@ uint_m vs_element_size(uint_m type);
 uint_m vs_vertex_size(vertex_element *elems, uint_m elems_count);
 
 int_m vs_alloc(vertex_element *elems, uint_m elems_count, uint_m verts_count, vertex_buffer *buf);
-int_m vs_buffer_data(vertex_buffer *buf, void *data, uint_m data_size);
+int_m vs_buffer_element(vertex_buffer *buf, int_m element_index, void *elements, uint_m elements_count);
 void vs_dealloc(vertex_buffer *buf);
 
 /*

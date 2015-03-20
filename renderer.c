@@ -89,13 +89,7 @@ uint_m vs_element_size(uint_m type)
 }
 uint_m vs_vertex_size(vertex_element *elems, uint_m elems_count)
 {
-	vertex_element *max = elems;
-	for (uint_m i = 1; i < elems_count; ++i)
-	{
-		if (elems[i].offset > max->offset)
-			max = elems;
-	}
-	return max->offset + vs_element_size(max->type);
+	return elems[elems_count - 1].offset + vs_element_size(elems[elems_count - 1].type);
 }
 
 int_m vs_alloc(vertex_element *elems, uint_m elems_count, uint_m verts_count, vertex_buffer *buf)
@@ -116,19 +110,32 @@ int_m vs_alloc(vertex_element *elems, uint_m elems_count, uint_m verts_count, ve
 	}
 	return 0;	
 }
-int_m vs_buffer_data(vertex_buffer *buf, void *data, uint_m data_size)
+int_m vs_buffer_element(vertex_buffer *buf, int_m element_index, void *elements, uint_m elements_count)
 {
 	if (buf == NULL)
 		return 0;
 
-	uint_m vert_size = vs_vertex_size(buf->vert_desc, buf->vert_desc_count);
-
-	if (data_size > vert_size * buf->verts_count)
+	if (elements_count > buf->verts_count)
 		return 0;
 
-	memcpy(buf->verts, data, data_size);
+	uint_m vert_size = vs_vertex_size(buf->vert_desc, buf->vert_desc_count);
+	uint_m elem_offset = buf->vert_desc[element_index].offset;
+	uint_m elem_size = vs_element_size(buf->vert_desc[element_index].type);
 
-	return 1;
+	uint8_t *read = (uint8_t *)elements;
+	uint8_t *write = (uint8_t *)(buf->verts) + elem_offset;
+
+	while (elements_count > 0)
+	{
+		memcpy(write, read, elem_size);
+
+		read += elem_size;
+		write += vert_size;
+
+		--elements_count;
+	}
+
+	return 1;	
 }
 void vs_dealloc(vertex_buffer *buf)
 {
@@ -150,44 +157,69 @@ void rs_clear(image_pixel color, image_buffer *buf)
 	}
 }
 
-void rs_order_verts(vector3_f *screen_verts)
+void rs_order_verts(vector3_f *screen_vertices, uint8_t **vertices)
 {
-	/* screen_verts[0] is the highest vert */
-	/* screen_verts[1] is the farthest right vert */
-	/* screen_verts[2] is the farthest left vert */
+	/* screen_vertices[0] is the highest vert */
+	/* screen_vertices[1] is the farthest right vert */
+	/* screen_vertices[2] is the farthest left vert */
 
-	/* put the highgest vertex into screen_verts[0] */
-	if (screen_verts[1].y > screen_verts[0].y)
+	/* put the highgest vertex into screen_vertices[0] */
+	if (screen_vertices[1].y > screen_vertices[0].y)
 	{
-		if (screen_verts[2].y > screen_verts[1].y)
+		if (screen_vertices[2].y > screen_vertices[1].y)
 		{
-			vector3_f temp = screen_verts[2];
-			screen_verts[2] = screen_verts[0];
-			screen_verts[0] = temp;
+			vector3_f temp = screen_vertices[2];
+			screen_vertices[2] = screen_vertices[0];
+			screen_vertices[0] = temp;
+
+			uint8_t *temp_2 = vertices[2];
+			vertices[2] = vertices[0];
+			vertices[0] = temp_2;
 		}
 		else
 		{
-			vector3_f temp = screen_verts[1];
-			screen_verts[1] = screen_verts[0];
-			screen_verts[0] = temp;
+			vector3_f temp = screen_vertices[1];
+			screen_vertices[1] = screen_vertices[0];
+			screen_vertices[0] = temp;
+
+			uint8_t *temp_2 = vertices[1];
+			vertices[1] = vertices[0];
+			vertices[0] = temp_2;
 		}
 	}
-	else if (screen_verts[2].y > screen_verts[0].y)
+	else if (screen_vertices[2].y > screen_vertices[0].y)
 	{
-		vector3_f temp = screen_verts[2];
-		screen_verts[2] = screen_verts[0];
-		screen_verts[0] = temp;
+		vector3_f temp = screen_vertices[2];
+		screen_vertices[2] = screen_vertices[0];
+		screen_vertices[0] = temp;
+
+		uint8_t *temp_2 = vertices[2];
+		vertices[2] = vertices[0];
+		vertices[0] = temp_2;
 	}
 
 	/* sort the other two vertices by X coordinate */
-	if (screen_verts[2].x < screen_verts[1].x)
+	if (screen_vertices[2].x < screen_vertices[1].x)
 	{
-		vector3_f temp = screen_verts[2];
-		screen_verts[2] = screen_verts[1];
-		screen_verts[1] = temp;
+		vector3_f temp = screen_vertices[2];
+		screen_vertices[2] = screen_vertices[1];
+		screen_vertices[1] = temp;
+
+		uint8_t *temp_2 = vertices[2];
+		vertices[2] = vertices[1];
+		vertices[1] = temp_2;
 	}
 }
-void rs_blit_line(image_buffer *buf, fragment_shader frag_shader, vertex_buffer *vert_buffer, uint_m line, int_m first, int_m last)
+void rs_blit_line(
+	image_buffer *buf,
+	fragment_shader frag_shader,
+	vertex_buffer *vert_buffer,
+	vector3_f *screen_vertices,
+	uint8_t **vertices,
+	uint_m line,
+	int_m first,
+	int_m last
+	)
 {
 	if (first < 0)
 		first = 0;
@@ -201,27 +233,65 @@ void rs_blit_line(image_buffer *buf, fragment_shader frag_shader, vertex_buffer 
 
 	image_pixel *blit = &buf->pixels[line * buf->width + first];
 
-	uint8_t fragment_vertex[vs_vertex_size(vert_buffer->vert_desc, vert_buffer->vert_desc_count)];
+	uint8_t fragment_vertex[
+		vs_vertex_size(
+			vert_buffer->vert_desc,
+			vert_buffer->vert_desc_count
+			)];
 
 	while (first <= last)
 	{
+		vector3_f tri_point = {
+			first,
+			line,
+			0
+		};
+		vector3_f barycentric = convert_to_barycentric(
+			tri_point,
+			screen_vertices[0],
+			screen_vertices[1],
+			screen_vertices[2]
+			);
+		tri_point.z = barycentric.x * screen_vertices[0].z + barycentric.y * screen_vertices[1].z + barycentric.z * screen_vertices[2].z;
+
 		for (uint_m i = 0; i < vert_buffer->vert_desc_count; ++i)
 		{
 			switch (vert_buffer->vert_desc[i].type)
 			{
 			case vertex_elem_position_vec3:
 			{
-				//*(vector3_f)(fragment + vert_buffer->vert_desc[i].offset) = { 0 };
+				*(vector3_f *)(fragment_vertex + vert_buffer->vert_desc[i].offset) =
+					tri_point;
 			}
 			break;
 			case vertex_elem_color_vec4:
 			{
-				//*(vector4_f)(fragment + vert_buffer->vert_desc[i].offset) = { 0 };
+				vector4_f color_1 = *(vector4_f *)(vertices[0] + vert_buffer->vert_desc[i].offset);
+				vector4_f color_2 = *(vector4_f *)(vertices[1] + vert_buffer->vert_desc[i].offset);
+				vector4_f color_3 = *(vector4_f *)(vertices[2] + vert_buffer->vert_desc[i].offset);
+
+				*(vector4_f *)(fragment_vertex + vert_buffer->vert_desc[i].offset) = 
+					vec4_add(vec4_add(
+						vec4_scale(color_1, barycentric.x),
+						vec4_scale(color_2, barycentric.y)
+						),
+					vec4_scale(color_3, barycentric.z)
+					);
 			}
 			break;
 			case vertex_elem_normal_vec3:
 			{
-				//*(vector3_f)(fragment + vert_buffer->vert_desc[i].offset) = { 0 };
+				vector3_f normal_1 = *(vector3_f *)(vertices[0] + vert_buffer->vert_desc[i].offset);
+				vector3_f normal_2 = *(vector3_f *)(vertices[1] + vert_buffer->vert_desc[i].offset);
+				vector3_f normal_3 = *(vector3_f *)(vertices[2] + vert_buffer->vert_desc[i].offset);
+
+				*(vector3_f *)(fragment_vertex + vert_buffer->vert_desc[i].offset) = 
+					vec3_add(vec3_add(
+						vec3_scale(normal_1, barycentric.x),
+						vec3_scale(normal_2, barycentric.y)
+						),
+					vec3_scale(normal_3, barycentric.z)
+					);
 			}
 			break;
 			}
@@ -255,38 +325,40 @@ void rs_draw_trianglelist(vertex_buffer *vert_buffer, uint_m offset, uint_m coun
 	uint_m vertex_size = vs_vertex_size(vert_buffer->vert_desc, vert_buffer->vert_desc_count);
 	uint_m pos_offset = vs_find_element(vert_buffer->vert_desc, vert_buffer->vert_desc_count, vertex_elem_position_vec3)->offset;
 
-	uint8_t *next_triangle = (uint8_t *)vert_buffer->verts;
-	//uint8_t	fragment[vertex_size];
-
-	vector3_f screen_verts[3];
+	vector3_f screen_vertices[3];
+	uint8_t *vertices[3];
+	uint8_t *next_vertex = (uint8_t *)vert_buffer->verts;
 
 	for (uint_m i = 0; i < count;)
 	{
-		memcpy(screen_verts + 0, next_triangle + pos_offset, sizeof(vector3_f));
-		next_triangle += vertex_size;
+		vertices[0] = next_vertex;
+		memcpy(screen_vertices + 0, next_vertex + pos_offset, sizeof(vector3_f));
+		next_vertex += vertex_size;
 
-		memcpy(screen_verts + 1, next_triangle + pos_offset, sizeof(vector3_f));
-		next_triangle += vertex_size;
+		vertices[1] = next_vertex;
+		memcpy(screen_vertices + 1, next_vertex + pos_offset, sizeof(vector3_f));
+		next_vertex += vertex_size;
 
-		memcpy(screen_verts + 2, next_triangle + pos_offset, sizeof(vector3_f));
-		next_triangle += vertex_size;
+		vertices[2] = next_vertex;
+		memcpy(screen_vertices + 2, next_vertex + pos_offset, sizeof(vector3_f));
+		next_vertex += vertex_size;
 
-		screen_verts[0].x = (screen_verts[0].x * buf_bounds.x + buf_bounds.x) * 0.5F;
-		screen_verts[0].y = (screen_verts[0].y * buf_bounds.y + buf_bounds.y) * 0.5F;
+		screen_vertices[0].x = (screen_vertices[0].x * buf_bounds.x + buf_bounds.x) * 0.5F;
+		screen_vertices[0].y = (screen_vertices[0].y * buf_bounds.y + buf_bounds.y) * 0.5F;
 
-		screen_verts[1].x = (screen_verts[1].x * buf_bounds.x + buf_bounds.x) * 0.5F;
-		screen_verts[1].y = (screen_verts[1].y * buf_bounds.y + buf_bounds.y) * 0.5F;
+		screen_vertices[1].x = (screen_vertices[1].x * buf_bounds.x + buf_bounds.x) * 0.5F;
+		screen_vertices[1].y = (screen_vertices[1].y * buf_bounds.y + buf_bounds.y) * 0.5F;
 
-		screen_verts[2].x = (screen_verts[2].x * buf_bounds.x + buf_bounds.x) * 0.5F;
-		screen_verts[2].y = (screen_verts[2].y * buf_bounds.y + buf_bounds.y) * 0.5F;
+		screen_vertices[2].x = (screen_vertices[2].x * buf_bounds.x + buf_bounds.x) * 0.5F;
+		screen_vertices[2].y = (screen_vertices[2].y * buf_bounds.y + buf_bounds.y) * 0.5F;
 
 		i += 3;
 
-		rs_order_verts(screen_verts);
+		rs_order_verts(screen_vertices, vertices);
 
-		int_m top_scanline = (int_m)screen_verts[0].y;
-		int_m middle_scanline = (int_m)fmaxf(screen_verts[1].y, screen_verts[2].y);
-		int_m bottom_scanline = (int_m)fminf(screen_verts[1].y, screen_verts[2].y);
+		int_m top_scanline = (int_m)screen_vertices[0].y;
+		int_m middle_scanline = (int_m)fmaxf(screen_vertices[1].y, screen_vertices[2].y);
+		int_m bottom_scanline = (int_m)fminf(screen_vertices[1].y, screen_vertices[2].y);
 		int_m cur_scanline = top_scanline;
 
 		/*
@@ -294,8 +366,8 @@ void rs_draw_trianglelist(vertex_buffer *vert_buffer, uint_m offset, uint_m coun
 		 */
 		if (cur_scanline == middle_scanline)
 		{
-			int_m left_mark = screen_verts[0].x;
-			int_m right_mark = screen_verts[1].y > screen_verts[2].y ? screen_verts[1].x : screen_verts[2].x;
+			int_m left_mark = screen_vertices[0].x;
+			int_m right_mark = screen_vertices[1].y > screen_vertices[2].y ? screen_vertices[1].x : screen_vertices[2].x;
 
 			if (left_mark > right_mark)
 			{
@@ -308,6 +380,8 @@ void rs_draw_trianglelist(vertex_buffer *vert_buffer, uint_m offset, uint_m coun
 				buf,
 				frag_shader,
 				vert_buffer,
+				screen_vertices,
+				vertices,
 				cur_scanline,
 				left_mark,
 				right_mark
@@ -317,8 +391,8 @@ void rs_draw_trianglelist(vertex_buffer *vert_buffer, uint_m offset, uint_m coun
 		}
 		else
 		{
-			real left_inv_slope = (screen_verts[1].x - screen_verts[0].x) / (screen_verts[1].y - screen_verts[0].y);
-			real right_inv_slope = (screen_verts[2].x - screen_verts[0].x) / (screen_verts[2].y - screen_verts[0].y);
+			real left_inv_slope = (screen_vertices[1].x - screen_vertices[0].x) / (screen_vertices[1].y - screen_vertices[0].y);
+			real right_inv_slope = (screen_vertices[2].x - screen_vertices[0].x) / (screen_vertices[2].y - screen_vertices[0].y);
 
 			while (cur_scanline > middle_scanline)
 			{
@@ -326,9 +400,11 @@ void rs_draw_trianglelist(vertex_buffer *vert_buffer, uint_m offset, uint_m coun
 					buf,
 					frag_shader,
 					vert_buffer,
+					screen_vertices,
+					vertices,
 					cur_scanline,
-					(int_m)(screen_verts[0].x + left_inv_slope * (cur_scanline - top_scanline)),
-					(int_m)(screen_verts[0].x + right_inv_slope * (cur_scanline - top_scanline))
+					(int_m)(screen_vertices[0].x + left_inv_slope * (cur_scanline - top_scanline)),
+					(int_m)(screen_vertices[0].x + right_inv_slope * (cur_scanline - top_scanline))
 					);
 
 				cur_scanline -= 1;
@@ -338,12 +414,12 @@ void rs_draw_trianglelist(vertex_buffer *vert_buffer, uint_m offset, uint_m coun
 		/*
 		 * render the bottom-half of the triangle
 		 */
-		if (screen_verts[1].y == screen_verts[2].y)
+		if (screen_vertices[1].y == screen_vertices[2].y)
 		{
 			if (top_scanline != middle_scanline)
 			{
-				int_m left_mark = screen_verts[1].x;
-				int_m right_mark = screen_verts[2].x;
+				int_m left_mark = screen_vertices[1].x;
+				int_m right_mark = screen_vertices[2].x;
 
 				if (left_mark > right_mark)
 				{
@@ -356,6 +432,8 @@ void rs_draw_trianglelist(vertex_buffer *vert_buffer, uint_m offset, uint_m coun
 					buf,
 					frag_shader,
 					vert_buffer,
+					screen_vertices,
+					vertices,
 					cur_scanline,
 					left_mark,
 					right_mark
@@ -364,10 +442,10 @@ void rs_draw_trianglelist(vertex_buffer *vert_buffer, uint_m offset, uint_m coun
 				cur_scanline -= 1;
 			}
 		}
-		else if (screen_verts[1].y > screen_verts[2].y)
+		else if (screen_vertices[1].y > screen_vertices[2].y)
 		{
-			real right_inv_slope = (screen_verts[2].x - screen_verts[0].x) / (screen_verts[2].y - screen_verts[0].y);
-			real left_inv_slope = (screen_verts[2].x - screen_verts[1].x) / (screen_verts[2].y - screen_verts[1].y);
+			real right_inv_slope = (screen_vertices[2].x - screen_vertices[0].x) / (screen_vertices[2].y - screen_vertices[0].y);
+			real left_inv_slope = (screen_vertices[2].x - screen_vertices[1].x) / (screen_vertices[2].y - screen_vertices[1].y);
 
 			while (cur_scanline >= bottom_scanline)
 			{
@@ -375,9 +453,11 @@ void rs_draw_trianglelist(vertex_buffer *vert_buffer, uint_m offset, uint_m coun
 					buf,
 					frag_shader,
 					vert_buffer,
+					screen_vertices,
+					vertices,
 					cur_scanline,
-					(int_m)(screen_verts[1].x + left_inv_slope * (cur_scanline - middle_scanline)),
-					(int_m)(screen_verts[0].x + right_inv_slope * (cur_scanline - top_scanline))
+					(int_m)(screen_vertices[1].x + left_inv_slope * (cur_scanline - middle_scanline)),
+					(int_m)(screen_vertices[0].x + right_inv_slope * (cur_scanline - top_scanline))
 					);
 
 				cur_scanline -= 1;
@@ -385,8 +465,8 @@ void rs_draw_trianglelist(vertex_buffer *vert_buffer, uint_m offset, uint_m coun
 		}
 		else
 		{
-			real right_inv_slope = (screen_verts[1].x - screen_verts[2].x) / (screen_verts[1].y - screen_verts[2].y);
-			real left_inv_slope = (screen_verts[1].x - screen_verts[0].x) / (screen_verts[1].y - screen_verts[0].y);
+			real right_inv_slope = (screen_vertices[1].x - screen_vertices[2].x) / (screen_vertices[1].y - screen_vertices[2].y);
+			real left_inv_slope = (screen_vertices[1].x - screen_vertices[0].x) / (screen_vertices[1].y - screen_vertices[0].y);
 
 			while (cur_scanline >= bottom_scanline)
 			{
@@ -394,9 +474,11 @@ void rs_draw_trianglelist(vertex_buffer *vert_buffer, uint_m offset, uint_m coun
 					buf,
 					frag_shader,
 					vert_buffer,
+					screen_vertices,
+					vertices,
 					cur_scanline,
-					(int_m)(screen_verts[0].x + left_inv_slope * (cur_scanline - top_scanline)),
-					(int_m)(screen_verts[2].x + right_inv_slope * (cur_scanline - middle_scanline))
+					(int_m)(screen_vertices[0].x + left_inv_slope * (cur_scanline - top_scanline)),
+					(int_m)(screen_vertices[2].x + right_inv_slope * (cur_scanline - middle_scanline))
 					);
 
 				cur_scanline -= 1;

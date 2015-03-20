@@ -1,6 +1,69 @@
 #include "math.h"
 #include <stdio.h>
 #include <math.h>
+#include <assert.h>
+#include <stdlib.h>
+
+vector3_f vec3_scale(vector3_f a, real b)
+{
+	vector3_f result = {
+		a.x * b,
+		a.y * b,
+		a.z * b
+	};
+	return result;
+}
+vector3_f vec3_add(vector3_f a, vector3_f b)
+{
+	vector3_f result = {
+		a.x + b.x,
+		a.y + b.y,
+		a.z + b.z
+	};
+	return result;	
+}
+
+vector4_f vec4_scale(vector4_f a, real b)
+{
+	vector4_f result = {
+		a.x * b,
+		a.y * b,
+		a.z * b,
+		a.w * b
+	};
+	return result;
+}
+vector4_f vec4_add(vector4_f a, vector4_f b)
+{
+	vector4_f result = {
+		a.x + b.x,
+		a.y + b.y,
+		a.z + b.z,
+		a.w + b.w
+	};
+	return result;
+}
+
+vector3_f convert_to_barycentric(vector3_f euclidean_point, vector3_f tri1, vector3_f tri2, vector3_f tri3)
+{
+	vector3_f result;
+
+	real determinant =
+		(tri2.y - tri3.y) * (tri1.x - tri3.x) + 
+		(tri3.x - tri2.x) * (tri1.y - tri3.y);
+
+	result.x = (
+		(tri2.y - tri3.y) * (euclidean_point.x - tri3.x) + 
+		(tri3.x - tri2.x) * (euclidean_point.y - tri3.y)
+		) / determinant;
+	result.y = (
+		(tri3.y - tri1.y) * (euclidean_point.x - tri3.x) + 
+		(tri1.x - tri3.x) * (euclidean_point.y - tri3.y)
+		) / determinant;
+	result.z = 1 - result.x - result.y;
+
+	return result;
+}
 
 mat4x4 mat4x4_multiply(mat4x4 *a, mat4x4 *b)
 {
