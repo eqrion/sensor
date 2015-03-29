@@ -24,7 +24,10 @@ typedef struct
 } image_buffer;
 
 int_m img_alloc(uint_m width, uint_m height, image_buffer *buf);
+void img_clear(image_pixel color, image_buffer *buffer);
 void img_dealloc(image_buffer *buf);
+
+image_pixel img_sample(image_buffer *buf, real x, real y);
 
 /*
  *	Depth Stencil Buffer
@@ -46,6 +49,7 @@ typedef struct
 } ds_buffer;
 
 int_m ds_alloc(uint_m width, uint_m height, ds_buffer *buf);
+void ds_clear(ds_pixel ds, ds_buffer *ds_buffer);
 void ds_dealloc(ds_buffer *buf);
 
 /*
@@ -56,7 +60,8 @@ enum vertex_element_type
 {
 	vertex_elem_position_vec3,
 	vertex_elem_color_vec4,
-	vertex_elem_normal_vec3
+	vertex_elem_normal_vec3,
+	vertex_elem_texcoord_vec2,
 };
 typedef struct
 {
@@ -83,7 +88,7 @@ void vs_dealloc(vertex_buffer *buf);
 */
 
 typedef void (* vertex_shader_function)(void* vertice);
-typedef image_pixel (* fragment_shader_function)(void* vertice);
+typedef image_pixel (* fragment_shader_function)(void *vertice, void *state);
 
 typedef struct
 {
@@ -95,9 +100,9 @@ typedef struct
 typedef struct
 {
 	fragment_shader_function function;
+	void *state;
 } fragment_shader;
 
-void rs_clear(image_pixel color, image_buffer *buffer);
-void rs_draw_trianglelist(vertex_buffer *vert_buffer, uint_m offset, uint_m count, fragment_shader shader, image_buffer *buf);
+void rs_draw_trianglelist(vertex_buffer *vert_buffer, uint_m offset, uint_m count, fragment_shader shader, image_buffer *out_image, ds_buffer *out_ds);
 
 #endif

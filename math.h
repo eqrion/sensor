@@ -19,6 +19,51 @@ typedef uint_fast32_t uint_m;
 
 typedef struct
 {
+	real x, y;
+} vector2_f;
+typedef struct
+{
+	int_m x, y;
+} vector2_i;
+
+vector2_f vec2_scale(vector2_f a, real b);
+vector2_f vec2_add(vector2_f a, vector2_f b);
+
+typedef struct
+{
+	real x, y, z;
+} vector3_f;
+typedef struct
+{
+	int_m x, y, z;
+} vector3_i;
+
+vector3_f vec3_scale(vector3_f a, real b);
+vector3_f vec3_scale_inv(vector3_f a, real b);
+vector3_f vec3_add(vector3_f a, vector3_f b);
+vector3_f vec3_subtract(vector3_f a, vector3_f b);
+real vec3_dot(vector3_f a, vector3_f b);
+vector3_f vec3_cross(vector3_f a, vector3_f b);
+vector3_f vec3_normalize(vector3_f a);
+real vec3_length(vector3_f a);
+
+vector3_f convert_to_barycentric2D(vector3_f euclidean_point, vector3_f tri1, vector3_f tri2, vector3_f tri3);
+vector3_f convert_to_barycentric3D(vector3_f euclidean_point, vector3_f tri1, vector3_f tri2, vector3_f tri3);
+
+typedef struct
+{
+	real x, y, z, w;
+} vector4_f;
+typedef struct
+{
+	int_m x, y, z, w;
+} vector4_i;
+
+vector4_f vec4_scale(vector4_f a, real b);
+vector4_f vec4_add(vector4_f a, vector4_f b);
+
+typedef struct
+{
 	real e11;
 	real e12;
 	real e13;
@@ -37,41 +82,6 @@ typedef struct
 	real e44;
 } mat4x4;
 
-typedef struct
-{
-	real x, y;
-} vector2_f;
-typedef struct
-{
-	int x, y;
-} vector2_i;
-
-typedef struct
-{
-	real x, y, z;
-} vector3_f;
-typedef struct
-{
-	int x, y, z;
-} vector3_i;
-
-typedef struct
-{
-	real x, y, z, w;
-} vector4_f;
-typedef struct
-{
-	int x, y, z, w;
-} vector4_i;
-
-vector3_f vec3_scale(vector3_f a, real b);
-vector3_f vec3_add(vector3_f a, vector3_f b);
-
-vector4_f vec4_scale(vector4_f a, real b);
-vector4_f vec4_add(vector4_f a, vector4_f b);
-
-vector3_f convert_to_barycentric(vector3_f euclidean_point, vector3_f tri1, vector3_f tri2, vector3_f tri3);
-
 mat4x4 mat4x4_multiply(mat4x4 *a, mat4x4 *b);
 vector3_f mat4x4_transform(mat4x4 *a, vector3_f* vector);
 void mat4x4_transform_stream(mat4x4 *a, vector3_f* vector, uint_m vector_count);
@@ -83,6 +93,9 @@ mat4x4 mat4x4_scaling(vector3_f a);
 mat4x4 mat4x4_rot_x(real theta);
 mat4x4 mat4x4_rot_y(real theta);
 mat4x4 mat4x4_rot_z(real theta);
+
+mat4x4 mat4x4_look_at_rh(vector3_f from, vector3_f to, vector3_f up_direction);
+mat4x4 mat4x4_projection_fov_rh(real l, real r, real b, real t, real n, real f);
 
 void mat4x4_print(mat4x4 *a);
 
