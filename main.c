@@ -32,6 +32,15 @@ image_pixel basic_frag_shader2(void *frag_vertex, void *state)
 
 int render_cube()
 {
+	/* allocate buffer and load the texture */
+
+	image_buffer texture_buffer;
+	if (!bmp_read("texture.bmp", &texture_buffer))
+	{
+		fprintf(stderr, "%s\n", "cannot read texture.bmp");
+		return 1;
+	}
+
 	/* allocate buffers for rendering */
 
 	image_buffer color_buffer;
@@ -40,11 +49,13 @@ int render_cube()
 	if (!img_alloc(1000, 1000, &color_buffer))
 	{
 		fprintf(stderr, "%s\n", "cannot allocate memory for an image.");
+		img_dealloc(&texture_buffer);
 		return 1;
 	}
 	if (!ds_alloc(1000, 1000, &ds_buffer))
 	{
 		fprintf(stderr, "%s\n", "cannot allocate memory for a depth buffer.");
+		img_dealloc(&texture_buffer);
 		img_dealloc(&color_buffer);
 		return 1;
 	}
@@ -53,13 +64,14 @@ int render_cube()
 
 	vertex_element vert_desc[] = {
 		{ .type = vertex_elem_position_vec3, .offset = 0},
-		{ .type = vertex_elem_color_vec4, .offset = sizeof(vector3_f) }
+		{ .type = vertex_elem_texcoord_vec2, .offset = sizeof(vector3_f) }
 	};
 	vertex_buffer vert_buffer = { 0 };
 
 	if (!vs_alloc(vert_desc, 2, 36, &vert_buffer))
 	{
 		fprintf(stderr, "%s\n", "cannot allocate a vertex_buffer");
+		img_dealloc(&texture_buffer);
 		img_dealloc(&color_buffer);
 		ds_dealloc(&ds_buffer);
 		return 1;
@@ -67,33 +79,33 @@ int render_cube()
 
 	vector3_f original_cube_positions[36] =
 	{
-		{1.0F,  -1.0F,  1.0F}, {-1.0F,  -1.0F,  1.0F}, {-1.0F,  -1.0F,  -1.0F},
-		{-1.0F,  1.0F,  -1.0F}, {-1.0F,  1.0F,  1.0F}, {1.0F,  1.0F,  1.0F},
-		{1.0F,  -1.0F,  -1.0F}, {1.0F,  1.0F,  -1.0F}, {1.0F,  1.0F,  1.0F},
-		{1.0F,  -1.0F,  1.0F}, {1.0F,  1.0F,  1.0F}, {-1.0F,  1.0F,  1.0F},
-		{-1.0F,  1.0F,  1.0F}, {-1.0F,  1.0F,  -1.0F}, {-1.0F,  -1.0F,  -1.0F},
-		{1.0F,  -1.0F,  -1.0F}, {-1.0F,  -1.0F,  -1.0F}, {-1.0F,  1.0F,  -1.0F},
-		{1.0F,  -1.0F,  -1.0F}, {1.0F,  -1.0F,  1.0F}, {-1.0F,  -1.0F,  -1.0F},
-		{1.0F,  1.0F,  -1.0F}, {-1.0F,  1.0F,  -1.0F}, {1.0F,  1.0F,  1.0F},
-		{1.0F,  -1.0F,  1.0F}, {1.0F,  -1.0F,  -1.0F}, {1.0F,  1.0F,  1.0F},
-		{-1.0F,  -1.0F,  1.0F}, {1.0F,  -1.0F,  1.0F}, {-1.0F,  1.0F,  1.0F},
-		{-1.0F,  -1.0F,  1.0F}, {-1.0F,  1.0F,  1.0F}, {-1.0F,  -1.0F,  -1.0F},
-		{1.0F,  1.0F,  -1.0F}, {1.0F,  -1.0F,  -1.0F}, {-1.0F,  1.0F,  -1.0F}
+		{-0.5F, -0.5F,  0.5F}, { 0.5F, -0.5F,  0.5F}, {-0.5F,  0.5F,  0.5F},
+		{-0.5F,  0.5F,  0.5F}, { 0.5F, -0.5F,  0.5F}, { 0.5F,  0.5F,  0.5F},
+		{-0.5F,  0.5F,  0.5F}, { 0.5F,  0.5F,  0.5F}, {-0.5F,  0.5F, -0.5F},
+		{-0.5F,  0.5F, -0.5F}, { 0.5F,  0.5F,  0.5F}, { 0.5F,  0.5F, -0.5F},
+		{-0.5F,  0.5F, -0.5F}, { 0.5F,  0.5F, -0.5F}, {-0.5F, -0.5F, -0.5F},
+		{-0.5F, -0.5F, -0.5F}, { 0.5F,  0.5F, -0.5F}, { 0.5F, -0.5F, -0.5F},
+		{-0.5F, -0.5F, -0.5F}, { 0.5F, -0.5F, -0.5F}, {-0.5F, -0.5F,  0.5F},
+		{-0.5F, -0.5F,  0.5F}, { 0.5F, -0.5F, -0.5F}, { 0.5F, -0.5F,  0.5F},
+		{ 0.5F, -0.5F,  0.5F}, { 0.5F, -0.5F, -0.5F}, { 0.5F,  0.5F,  0.5F},
+		{ 0.5F,  0.5F,  0.5F}, { 0.5F, -0.5F, -0.5F}, { 0.5F,  0.5F, -0.5F},
+		{-0.5F, -0.5F, -0.5F}, {-0.5F, -0.5F,  0.5F}, {-0.5F,  0.5F, -0.5F},
+		{-0.5F,  0.5F, -0.5F}, {-0.5F, -0.5F,  0.5F}, {-0.5F,  0.5F,  0.5F}
 	};
-	vector4_f original_cube_colors[36] =
+	vector2_f cube_texcoords[36] =
 	{
-		{1.0F,  1.0F,  1.0F, 0.0F}, {1.0F,  1.0F,  1.0F, 0.0F}, {1.0F,  1.0F,  1.0F, 0.0F},
-		{1.0F,  1.0F,  0.0F, 0.0F}, {1.0F,  1.0F,  0.0F, 0.0F}, {1.0F,  1.0F,  0.0F, 0.0F},
-		{1.0F,  0.0F,  1.0F, 0.0F}, {1.0F,  0.0F,  1.0F, 0.0F}, {1.0F,  0.0F,  1.0F, 0.0F},
-		{0.0F,  1.0F,  1.0F, 0.0F}, {0.0F,  1.0F,  1.0F, 0.0F}, {0.0F,  1.0F,  1.0F, 0.0F},
-		{1.0F,  0.0F,  0.0F, 0.0F}, {1.0F,  0.0F,  0.0F, 0.0F}, {1.0F,  0.0F,  0.0F, 0.0F},
-		{0.0F,  0.0F,  1.0F, 0.0F}, {0.0F,  0.0F,  1.0F, 0.0F}, {0.0F,  0.0F,  1.0F, 0.0F},
-		{0.0F,  1.0F,  0.0F, 0.0F}, {0.0F,  1.0F,  0.0F, 0.0F}, {0.0F,  1.0F,  0.0F, 0.0F},
-		{0.0F,  0.0F,  0.0F, 0.0F}, {0.0F,  0.0F,  0.0F, 0.0F}, {0.0F,  0.0F,  0.0F, 0.0F},
-		{0.0F,  0.0F,  0.5F, 0.0F}, {0.0F,  0.0F,  0.5F, 0.0F}, {0.0F,  0.0F,  0.5F, 0.0F},
-		{0.0F,  0.5F,  0.0F, 0.0F}, {0.0F,  0.5F,  0.0F, 0.0F}, {0.0F,  0.5F,  0.0F, 0.0F},
-		{0.5F,  0.0F,  0.0F, 0.0F}, {0.5F,  0.0F,  0.0F, 0.0F}, {0.5F,  0.0F,  0.0F, 0.0F},
-		{0.5F,  0.0F,  0.5F, 0.0F}, {0.5F,  0.0F,  0.5F, 0.0F}, {0.5F,  0.0F,  0.5F, 0.0F},
+		{0.0F, 0.0F}, {1.0F, 0.0F}, {0.0F, 1.0F},
+		{0.0F, 1.0F}, {1.0F, 0.0F}, {1.0F, 1.0F},
+		{0.0F, 0.0F}, {1.0F, 0.0F}, {0.0F, 1.0F},
+		{0.0F, 1.0F}, {1.0F, 0.0F}, {1.0F, 1.0F},
+		{1.0F, 1.0F}, {0.0F, 1.0F}, {1.0F, 0.0F},
+		{1.0F, 0.0F}, {0.0F, 1.0F}, {0.0F, 0.0F},
+		{0.0F, 0.0F}, {1.0F, 0.0F}, {0.0F, 1.0F},
+		{0.0F, 1.0F}, {1.0F, 0.0F}, {1.0F, 1.0F},
+		{0.0F, 0.0F}, {1.0F, 0.0F}, {0.0F, 1.0F},
+		{0.0F, 1.0F}, {1.0F, 0.0F}, {1.0F, 1.0F},
+		{0.0F, 0.0F}, {1.0F, 0.0F}, {0.0F, 1.0F},
+		{0.0F, 1.0F}, {1.0F, 0.0F}, {1.0F, 1.0F}
 	};
 	vector3_f cube_positions[36];
 
@@ -103,28 +115,27 @@ int render_cube()
 
 		memcpy(cube_positions, original_cube_positions, sizeof(vector3_f) * 36);
 
-		vector3_f new_center = { 0, 0, -5 };
+		vector3_f new_center = { 0, 0, -5.0F };
 		mat4x4 translation = mat4x4_translation(new_center);
 		mat4x4 rotation1 = mat4x4_rot_y(M_PI_OVER_8 / 2 * i);
 		mat4x4 rotation2 = mat4x4_identity();
 		mat4x4 world = mat4x4_multiply(&rotation2, &rotation1);
 		world = mat4x4_multiply(&translation, &world);
 
-		mat4x4 projection = mat4x4_projection_fov_rh(-.01F, .01F, .01F, -.01F, 0.01F, 10.0F);
+		mat4x4 projection = mat4x4_projection_fov_rh(-.4F, .4F, .4F, -.4F, -1.0F, -10.0F);
 
-		mat4x4 wvp = mat4x4_multiply(&projection, &world);
-
-		mat4x4_transform_stream(&wvp, cube_positions, 36);
+		mat4x4_transform_stream(&world, cube_positions, 36);
+		mat4x4_transform_stream(&projection, cube_positions, 36);
 
 		vs_buffer_element(&vert_buffer, 0, cube_positions, 36);
-		vs_buffer_element(&vert_buffer, 1, original_cube_colors, 36);
+		vs_buffer_element(&vert_buffer, 1, cube_texcoords, 36);
 
 		/* render the cube into the buffers */
 
-		fragment_shader fs = { .function = basic_frag_shader1, .state = NULL };
+		fragment_shader fs = { .function = basic_frag_shader2, .state = &texture_buffer };
 
 		image_pixel clear = {0,255,0};
-		ds_pixel depth_zero = {0};
+		ds_pixel depth_zero = {1.0};
 		img_clear(clear, &color_buffer);
 		ds_clear(depth_zero, &ds_buffer);
 		rs_draw_trianglelist(&vert_buffer, 0, 36, fs, &color_buffer, &ds_buffer);
@@ -136,6 +147,7 @@ int render_cube()
 	    bmp_write(filename, &color_buffer);
 	}
 
+	img_dealloc(&texture_buffer);
 	img_dealloc(&color_buffer);
 	ds_dealloc(&ds_buffer);
 	vs_dealloc(&vert_buffer);
@@ -200,7 +212,7 @@ int render_triangle(vector3_f *tri_positions, const char *filename)
 
 	fragment_shader fs = { .function = basic_frag_shader2, .state = &texture };
 	image_pixel clear = {0,255,0};
-	ds_pixel depth_zero = {0};
+	ds_pixel depth_zero = {1.0};
 
 	img_clear(clear, &color_buffer);
 	ds_clear(depth_zero, &ds_buffer);
@@ -218,12 +230,34 @@ int render_triangle(vector3_f *tri_positions, const char *filename)
 
 int main(int argc, char** argcv)
 {
+	/*
+	for (int i = 0; i < 200; ++i)
+	{
+		vector3_f before = {0.0, 0.0, -0.01F - i * (10.0F / 200.0F)};
+
+		mat4x4 proj = mat4x4_projection_fov_rh(-.05F, .05F, .05F, -.05F, -1.0F, -10.0F);
+
+		vector3_f after = mat4x4_transform(&proj, &before);
+
+		printf("{%f, %f, %f} -> {%f, %f, %f}\n", before.x, before.y, before.z, after.x, after.y, after.z);
+	}
+	return 0;
+	*/
+	
+
+
 	return render_cube();
 
-	/*vector3_f coordinates[3] = {
-		{ 0.203238428, -0.172840074, 1.00546229},
-		{ -0.127220005, -0.161920354, 1.00524366},
-		{ 0.205457479, -0.261497766, 1.00723708}
+/*
+{0.739880} {0.739880} {0.824540}
+*/
+
+	
+	vector3_f coordinates[3] = {
+		{ -.5F, -.5F, 0.739880F },
+		{ 0.5F, -.5F, 0.824540F },
+		{ 0.5F, 0.5F, 0.739880F },
     };
-	return render_triangle(coordinates, "triangle.bmp");*/
+	return render_triangle(coordinates, "triangle.bmp");
+	
 }

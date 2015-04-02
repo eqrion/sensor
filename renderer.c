@@ -5,6 +5,7 @@
 #include <string.h>
 
 #define RASTER_TRACE 0
+#define DEPTH_TRACE 1
 
 int_m img_alloc(uint_m width, uint_m height, image_buffer *buf)
 {
@@ -357,7 +358,7 @@ void rs_render_line(
 			);
 		tri_point.z = barycentric.x * screen_positions[0].z + barycentric.y * screen_positions[1].z + barycentric.z * screen_positions[2].z;
 
-		if ((*out_ds).depth < tri_point.z)
+		if ((*out_ds).depth > tri_point.z)
 		{
 			real weight1 = barycentric.x / screen_positions[0].z;
 			real weight2 = barycentric.y / screen_positions[1].z;
@@ -499,12 +500,15 @@ void rs_draw_trianglelist(vertex_buffer *vert_buffer, uint_m offset, uint_m coun
 
 		screen_positions[0].x = (screen_positions[0].x * buf_bounds.x + buf_bounds.x) * 0.5F;
 		screen_positions[0].y = (screen_positions[0].y * buf_bounds.y + buf_bounds.y) * 0.5F;
+		//screen_positions[0].z = (screen_positions[0].z + 1.0F) / 2;
 
 		screen_positions[1].x = (screen_positions[1].x * buf_bounds.x + buf_bounds.x) * 0.5F;
 		screen_positions[1].y = (screen_positions[1].y * buf_bounds.y + buf_bounds.y) * 0.5F;
+		//screen_positions[1].z = (screen_positions[1].z + 1.0F) / 2;
 
 		screen_positions[2].x = (screen_positions[2].x * buf_bounds.x + buf_bounds.x) * 0.5F;
 		screen_positions[2].y = (screen_positions[2].y * buf_bounds.y + buf_bounds.y) * 0.5F;
+		//screen_positions[2].z = (screen_positions[2].z + 1.0F) / 2;
 
 		i += 3;
 
@@ -525,6 +529,9 @@ void rs_draw_trianglelist(vertex_buffer *vert_buffer, uint_m offset, uint_m coun
 			screen_positions[1].x, screen_positions[1].y, screen_positions[1].z,
 			screen_positions[2].x, screen_positions[2].y, screen_positions[2].z
 			);
+#endif
+#if DEPTH_TRACE
+		printf("depth positions: {%f} {%f} {%f}\n", screen_positions[0].z, screen_positions[1].z, screen_positions[2].z);
 #endif
 
 		/*
